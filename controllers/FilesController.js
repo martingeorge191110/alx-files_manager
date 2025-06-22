@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import dbClient from '../utils/db';
@@ -16,7 +17,9 @@ class FilesController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { name, type, parentId = '0', isPublic = false, data } = req.body;
+    const {
+      name, type, parentId = '0', isPublic = false, data,
+    } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Missing name' });
@@ -27,7 +30,7 @@ class FilesController {
     }
 
     if (type !== 'folder' && !data) {
-      return res.status(400).json({ error: 'Missing data' })
+      return res.status(400).json({ error: 'Missing data' });
     }
 
     if (parentId !== '0') {
@@ -55,14 +58,14 @@ class FilesController {
 
     if (type === 'folder') {
       const result = await dbClient.db.collection('files').insertOne(fileData);
-        return res.status(201).json({
-          id: result.insertedId.toString(),
-          userId: fileData.userId.toString(),
-          name: fileData.name,
-          type: fileData.type,
-          isPublic: fileData.isPublic,
-          parentId: fileData.parentId,
-        });
+      return res.status(201).json({
+        id: result.insertedId.toString(),
+        userId: fileData.userId.toString(),
+        name: fileData.name,
+        type: fileData.type,
+        isPublic: fileData.isPublic,
+        parentId: fileData.parentId,
+      });
     }
 
     const localPath = path.join(folderPath, uuidv4());
@@ -82,7 +85,7 @@ class FilesController {
     });
   }
 
-  static async getShow(req,res) {
+  static async getShow(req, res) {
     const token = req.headers['x-token'];
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -148,7 +151,7 @@ class FilesController {
     return res.status(200).json(response);
   }
 
-    static async putPublish(req, res) {
+  static async putPublish(req, res) {
     const token = req.header('X-Token');
     const fileId = req.params.id;
 
@@ -164,7 +167,7 @@ class FilesController {
 
     await dbClient.db.collection('files').updateOne(
       { _id: new ObjectId(fileId) },
-      { $set: { isPublic: true } }
+      { $set: { isPublic: true } },
     );
 
     file.isPublic = true;
@@ -194,7 +197,7 @@ class FilesController {
 
     await dbClient.db.collection('files').updateOne(
       { _id: new ObjectId(fileId) },
-      { $set: { isPublic: false } }
+      { $set: { isPublic: false } },
     );
 
     file.isPublic = false;
