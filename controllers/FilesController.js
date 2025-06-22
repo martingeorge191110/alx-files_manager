@@ -34,14 +34,20 @@ class FilesController {
       return res.status(400).json({ error: 'Missing data' });
     }
 
+    let parentFile = null;
+    let parentIdToStore = '0';
     if (parentId !== '0') {
-      const parentFile = await dbClient.db.collection('files').findOne({ _id: new dbClient.client.constructor.ObjectID(parentId) });
+      if (!ObjectId.isValid(parentId)) {
+        return res.status(400).json({ error: 'Parent not found' });
+      }
+      parentFile = await dbClient.db.collection('files').findOne({ _id: new ObjectId(parentId) });
       if (!parentFile) {
         return res.status(400).json({ error: 'Parent not found' });
       }
       if (parentFile.type !== 'folder') {
         return res.status(400).json({ error: 'Parent is not a folder' });
       }
+      parentIdToStore = new ObjectId(parentId);
     }
 
     const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
@@ -50,11 +56,11 @@ class FilesController {
     }
 
     const fileData = {
-      userId: new dbClient.client.constructor.ObjectID(userId),
+      userId: new ObjectId(userId),
       name,
       type,
       isPublic,
-      parentId: parentId === '0' ? '0' : new dbClient.client.constructor.ObjectID(parentId),
+      parentId: parentIdToStore,
     };
 
     if (type === 'folder') {
@@ -65,7 +71,7 @@ class FilesController {
         name: fileData.name,
         type: fileData.type,
         isPublic: fileData.isPublic,
-        parentId: fileData.parentId,
+        parentId: fileData.parentId === '0' ? 0 : fileData.parentId.toString(),
       });
     }
 
@@ -82,7 +88,7 @@ class FilesController {
       name: fileData.name,
       type: fileData.type,
       isPublic: fileData.isPublic,
-      parentId: fileData.parentId,
+      parentId: fileData.parentId === '0' ? 0 : fileData.parentId.toString(),
     });
   }
 
