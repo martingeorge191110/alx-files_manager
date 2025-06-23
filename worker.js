@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import thumbnail from 'image-thumbnail';
 import fs from 'fs';
 import dbClient from './utils/db';
-import { fileQueue } from './utils/queue';
+import { fileQueue, userQueue } from './utils/queue';
 
 fileQueue.process(async (job, done) => {
   const { fileId, userId } = job.data;
@@ -50,4 +50,27 @@ fileQueue.process(async (job, done) => {
   } catch (err) {
     done(err);
   }
+});
+
+userQueue.process(async (job, done) => {
+  const { userId } = job.data;
+  if (!userId) {
+    done(new Error('Missing userId'));
+    return;
+  }
+  let user;
+  try {
+    user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
+  } catch (err) {
+    done(err);
+    return;
+  }
+  if (!user) {
+    done(new Error('User not found'));
+    return;
+  }
+  // Print welcome message
+  // eslint-disable-next-line no-console
+  console.log(`Welcome ${user.email}!`);
+  done();
 });
